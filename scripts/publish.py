@@ -69,7 +69,13 @@ def main():
     tok = blogger.access_token()
     mode = os.environ.get("PUBLISH_MODE", "draft")
     labels = meta.get("labels", [])[:5]
-    if mode == "schedule":
+    if mode == "now":
+        # 영문 제목으로 바로 발행해 깔끔한 주소를 만든 뒤 한글 제목으로 바꿔요
+        p = blogger.insert_post(tok, meta["title_en"], html, labels, draft=True)
+        p = blogger.schedule_post(tok, p["id"], None)
+        p = blogger.update_title(tok, p["id"], meta["title"])
+        state = f"바로 발행됨 → {p.get('url', '')}"
+    elif mode == "schedule":
         p = blogger.insert_post(tok, meta["title_en"], html, labels, draft=True)
         when = next_slot(int(os.environ.get("PUBLISH_HOUR", "19")))
         p = blogger.schedule_post(tok, p["id"], when.isoformat())
@@ -82,10 +88,14 @@ def main():
     edit = f"https://www.blogger.com/blog/post/edit/{blogger.blog_id()}/{pid}"
 
     # 3) 발행용 기록 (publish-draft 워크플로가 영문 제목→발행→한글 제목 순서로 처리)
-    os.makedirs(os.path.join(ROOT, "drafts"), exist_ok=True)
-    rec = {"post_id": pid, "title": meta["title"], "title_en": meta["title_en"], "created": today, "state": state}
-    json.dump(rec, open(os.path.join(ROOT, "drafts", f"{pid}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    push(f"draft record: {pid}")
+    if mode != "now":
+        os.makedirs(os.path.join(ROOT, "drafts"), exist_ok=True)
+        rec = {"post_id": pid, "title": meta["title"], "title_en": meta["title_en"], "created": today, "state": state}
+        json.dump(rec, open(os.path.join(ROOT, "drafts", f"{pid}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        push(f"draft record: {pid}")
+    tail = ("이미 발행된 글이에요. 고칠 부분이 있으면 편집 링크에서 수정하세요." if mode == "now" else
+            f"발행하려면: GitHub → Actions → **publish-draft** → Run workflow → 글 ID `{pid}` 입력.\n"
+            "(영문 제목으로 먼저 발행해 깔끔한 주소를 만든 뒤 한글 제목으로 자동으로 바꿔요.)")
 
     # 4) 결과 알림 (GitHub 이슈 → 메일/앱 알림)
     src = "\n".join(f"- [{s.get('title','출처')}]({s.get('url','')})" for s in meta.get("sources", []))
@@ -112,8 +122,7 @@ def main():
 {src}
 
 ---
-발행하려면: GitHub → Actions → **publish-draft** → Run workflow → 글 ID `{pid}` 입력.
-(영문 제목으로 먼저 발행해 깔끔한 주소를 만든 뒤 한글 제목으로 자동으로 바꿔요.)
+{tail}
 """
     open(os.path.join(W, "report.md"), "w", encoding="utf-8").write(report)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
