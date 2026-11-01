@@ -21,6 +21,7 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import blogger  # noqa: E402
 from restyle_posts import all_posts  # noqa: E402
+from heroes import pick  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "work", "rehero")
@@ -104,7 +105,7 @@ def main():
                 date_str = f"{d.year}.{d.month}.{d.day}"
             except ValueError:
                 date_str = ""
-            photo = HEROES[int(hashlib.md5(p["id"].encode()).hexdigest(), 16) % len(HEROES)]
+            photo = pick(p["title"] + " " + " ".join(labels) + " " + kicker, key=p["id"]) or HEROES[0]
             hp = os.path.join(OUT, f"{p['id']}.html")
             open(hp, "w", encoding="utf-8").write(hero_html(kicker, head, lead, date_str, photo))
             pg.goto("file://" + hp)

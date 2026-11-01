@@ -11,18 +11,31 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GDIR = os.path.join(ROOT, "work", "graphics")
-HEROES = sorted(glob.glob(os.path.join(ROOT, "templates", "heroes", "*.jpg")))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from heroes import HDIR, pick  # noqa: E402
 
 
 def hero_photo():
-    """대표 이미지 배경 사진을 날짜별로 돌려 써요. HERO=2 처럼 번호로 고를 수도 있어요."""
-    if not HEROES:
-        return None
-    pick = os.environ.get("HERO")
-    if pick and pick.isdigit() and 1 <= int(pick) <= len(HEROES):
-        return HEROES[int(pick) - 1]
-    import datetime as dt
-    return HEROES[dt.date.today().toordinal() % len(HEROES)]
+    """글 주제(work/post.json 제목·라벨, 본문 분류)에 맞는 배경 사진. HERO=hero2.jpg 처럼 직접 고를 수도 있어요."""
+    forced = os.environ.get("HERO")
+    if forced:
+        f = forced if forced.endswith(".jpg") else f"hero{forced}.jpg"
+        return os.path.join(HDIR, f)
+    text = ""
+    w = os.path.join(ROOT, "work")
+    try:
+        import json
+        m = json.load(open(os.path.join(w, "post.json"), encoding="utf-8"))
+        text = m.get("title", "") + " " + " ".join(m.get("labels", []))
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        import re
+        cat = re.search(r'class="cat">([^<]*)<', open(os.path.join(w, "body.html"), encoding="utf-8").read())
+        text += " " + (cat.group(1) if cat else "")
+    except Exception:  # noqa: BLE001
+        pass
+    return pick(text)
 
 
 def main():

@@ -1,0 +1,10 @@
+{
+  "_설명": "대표 이미지 배경 사진과 어울리는 글 종류. finance = 주식·ETF·세금·증권사·자동매매 글(밤 분위기 유지), life = 요리·카페·와인·여행·계절 글. 새 사진을 넣으면 여기에 한 줄 추가하세요. 목록에 없는 사진은 쓰지 않아요.",
+  "hero1.jpg": ["finance"],
+  "hero2.jpg": ["finance", "life"],
+  "hero3.jpg": ["finance"],
+  "hero4.jpg": ["finance"],
+  "hero5.jpg": ["finance", "life"],
+  "hero6.jpg": ["life"],
+  "hero7.jpg": ["life"]
+}
