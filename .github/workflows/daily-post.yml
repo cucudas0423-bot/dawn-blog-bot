@@ -61,6 +61,7 @@ jobs:
           NOTE: ${{ github.event.inputs.note }}
           MODEL: ${{ vars.CLAUDE_MODEL || 'opus' }}
         run: |
+          set -o pipefail
           TODAY=$(date +%F)
           PROMPT="$(cat prompts/daily.md)
 
@@ -70,7 +71,20 @@ jobs:
             --model "$MODEL" \
             --max-turns 120 \
             --allowedTools "WebSearch,WebFetch,Read,Write,Edit,Glob,Grep,Bash(python scripts/render.py*),Bash(python scripts/check.py*),Bash(ls*)" \
-            --output-format text | tee work/claude_log.txt
+            --output-format text 2>&1 | tee work/claude_log.txt || true
+          if grep -qiE "hit your (session|usage|weekly)? ?limit|usage limit|rate limit" work/claude_log.txt; then
+            echo "::error title=Claude 사용 한도 초과::$(grep -iE 'limit' work/claude_log.txt | head -1) — 한도가 풀린 뒤 이 실행을 Re-run 하세요."
+            exit 1
+          fi
+          if grep -qiE "invalid api key|authentication|unauthorized|OAuth token" work/claude_log.txt; then
+            echo "::error title=Claude 인증 실패::CLAUDE_CODE_OAUTH_TOKEN 비밀값을 확인하세요. (claude setup-token 으로 다시 발급)"
+            exit 1
+          fi
+          if [ ! -f work/post.json ]; then
+            echo "::error title=글 작성 미완료::Claude가 글을 끝내지 못했어요. Artifacts의 work/claude_log.txt 를 확인하세요."
+            tail -20 work/claude_log.txt
+            exit 1
+          fi
 
       - name: Render graphics
         run: python scripts/render.py
