@@ -1,0 +1,25 @@
+name: restyle-posts
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "실제로 수정할까요? (끄면 바꿀 곳만 보여줘요)"
+        type: boolean
+        default: false
+
+jobs:
+  restyle:
+    runs-on: ubuntu-latest
+    env:
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests beautifulsoup4
+      - run: python scripts/restyle_posts.py ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}

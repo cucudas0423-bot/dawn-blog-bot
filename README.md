@@ -83,6 +83,11 @@ GitHub 모바일 앱을 설치하거나, 저장소 오른쪽 위 **Watch → All
 - **특정 주제 요청:** Actions → daily-post → Run workflow → "추가 지시" 칸에 예: `SOXL 보수와 변동성 위험 정리해줘`
 - **자동 예약발행으로 전환:** Variables 에서 `PUBLISH_MODE` 를 `schedule` 로 바꾸면 매일 PUBLISH_HOUR 에 자동 발행돼요.
 
+## 글투·디자인
+- 글을 다 쓴 뒤 `humanizer/`(korean-humanizer, MIT, dotoricode)의 기준으로 AI 글투를 한 번 걷어내요. 해요체는 유지해요.
+- 그래픽은 "새벽 4시" 밤·가로등 무드(`templates/card.css`, 대표 이미지 배경 `templates/hero_bg.svg`)예요.
+- 예전 글의 파란 강조·주황 박스를 바꾸려면 Actions → **restyle-posts** (먼저 apply 끄고 확인 → 켜고 실행).
+
 ## 파일 구성
 | 경로 | 내용 |
 |---|---|
