@@ -40,21 +40,29 @@ def split_title(title: str):
     if m:
         year = m.group(1)
         title = title[: m.start()].strip()
+    cands = []
     for sep in (", ", "? ", "… ", ": "):
-        if sep in title:
-            a, b = title.split(sep, 1)
-            if len(a) >= 6:
-                head = a + (sep.strip() if sep.strip() in "?…" else "")
-                return kicker, head.strip(), (b + (" " + year if year else "")).strip()
+        i = title.find(sep)
+        while i != -1:
+            if i >= 8:
+                cands.append((i, sep))
+                break
+            i = title.find(sep, i + 1)
+    if cands:
+        i, sep = min(cands)
+        head = title[:i] + (sep.strip() if sep.strip() in "?…" else "")
+        rest = title[i + len(sep):]
+        return kicker, head.strip(), (rest + (" " + year if year else "")).strip()
     return kicker, title, year
 
 
 def hero_html(kicker, head, lead, date_str, photo):
     size = 34 if len(head) <= 22 else 30 if len(head) <= 30 else 27
+    width = 440 if len(head) <= 26 else 540
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <link rel="stylesheet" href="file://{ROOT}/templates/card.css"></head><body>
 <div id="card" class="hero" style='--hero:url("file://{photo}")'>
-  <div class="in">
+  <div class="in" style="width:{width}px">
     {f'<div class="kicker">{H.escape(kicker)}</div>' if kicker else ''}
     <h1 style="font-size:{size}px">{H.escape(head)}</h1>
     {f'<p class="lead">{H.escape(lead)}</p>' if lead else ''}
@@ -88,7 +96,8 @@ def main():
             labels = p.get("labels", [])
             kicker, head, lead = split_title(p["title"])
             if not kicker:
-                kicker = labels[0] if labels else "새벽 4시의 자동매매"
+                cat = soup.find(string=re.compile(r"새벽 4시의 자동매매\s*·"))
+                kicker = cat.split("·", 1)[1].strip() if cat else (labels[0] if labels else "")
             when = p.get("published") or p.get("updated") or ""
             try:
                 d = dt.datetime.fromisoformat(when.replace("Z", "+00:00"))
