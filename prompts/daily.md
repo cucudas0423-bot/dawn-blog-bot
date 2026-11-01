@@ -46,7 +46,7 @@
 - templates/sample_card.html, templates/sample_hero.html, templates/card.css 를 읽고 같은 디자인을 써. 각 파일은 `<link rel="stylesheet" href="../../templates/card.css">` 를 불러오고, 내용 전체를 `<div id="card">` 안에 넣어. 폭은 760px 고정, 높이는 내용만큼.
 - 쓸 수 있는 구성: 표(.hl 강조 행, .o/.x/.tri 기호), 막대(.bars/.bar), 단계(.steps/.step), 체크리스트(.check). 필요하면 파일 안에 <style>을 추가해도 돼.
 - 디자인 톤: "새벽 4시" 블로그 이름에 맞춘 밤·가로등 무드예요. 짙은 남색·차콜 바탕에 따뜻한 호박색(가로등 불빛) 포인트, 은은한 빛과 비 느낌. card.css 기본값을 그대로 쓰고 다른 색(파랑·초록·보라 등)을 새로 넣지 마.
-- 첫 그래픽(g1, 대표 이미지)은 templates/sample_hero.html 처럼 `<div id="card" class="hero">` 구조로 만들어. 제목은 짧게 두 줄 이내.
+- 첫 그래픽(g1, 대표 이미지)은 templates/sample_hero.html 처럼 `<div id="card" class="hero">` 구조로 만들어. 제목은 짧게 두 줄 이내. 배경 사진은 렌더링 단계에서 글 주제(제목·라벨·분류)에 맞춰 자동으로 골라져요(주식·세금 글은 밤 사진, 요리·카페·와인 글은 그에 맞는 사진). 배경을 직접 지정하지 마.
 - 글자는 크게(본문 16px 이상), 한 그래픽에 메시지 하나. 하단 .foot 에 기준 날짜와 "새벽 4시의 자동매매".
 - 외부 이미지·폰트·스크립트를 불러오지 마.
 - 다 만들면 `python scripts/render.py` 를 실행하고, 만들어진 PNG를 Read로 열어 글자 잘림·겹침·오타를 확인해서 고쳐. 고친 뒤 다시 렌더링해.
