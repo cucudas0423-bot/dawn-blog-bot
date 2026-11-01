@@ -1,0 +1,37 @@
+name: publish-draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: "발행할 글 ID (이슈에 적힌 숫자)"
+        required: true
+      when:
+        description: "now = 바로 발행 / 예약은 2026-11-03 19:00 형식(서울 시간)"
+        required: true
+        default: "now"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - run: python scripts/publish_draft.py "${{ github.event.inputs.post_id }}" "${{ github.event.inputs.when }}"
+      - name: Remove draft record
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          git add -A drafts
+          git diff --cached --quiet || (git commit -m "published ${{ github.event.inputs.post_id }}" && git push)

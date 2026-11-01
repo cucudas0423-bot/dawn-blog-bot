@@ -1,0 +1,93 @@
+name: daily-post
+
+on:
+  schedule:
+    # 매일 14:50 KST (= 05:50 UTC)
+    - cron: "50 5 * * *"
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "이번 회차에만 줄 추가 지시 (예: SOXL 관련 주제로 써줘)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: daily-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Seoul
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+      PUBLISH_MODE: ${{ vars.PUBLISH_MODE || 'draft' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
+          pip install -q -r requirements.txt
+          python -m playwright install --with-deps chromium > /dev/null
+          npm install -g @anthropic-ai/claude-code > /dev/null
+
+      - name: Collect existing posts
+        run: |
+          mkdir -p work/graphics
+          python scripts/blogger.py list > work/existing_posts.json
+          echo "기존 글 $(python -c "import json;print(len(json.load(open('work/existing_posts.json'))))")개"
+
+      - name: Research and write (Claude)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          NOTE: ${{ github.event.inputs.note }}
+          MODEL: ${{ vars.CLAUDE_MODEL || 'opus' }}
+        run: |
+          TODAY=$(date +%F)
+          PROMPT="$(cat prompts/daily.md)
+
+          오늘 날짜(서울): ${TODAY}
+          이번 회차 추가 지시: ${NOTE:-없음}"
+          claude -p "$PROMPT" \
+            --model "$MODEL" \
+            --max-turns 120 \
+            --allowedTools "WebSearch,WebFetch,Read,Write,Edit,Glob,Grep,Bash(python scripts/render.py*),Bash(python scripts/check.py*),Bash(ls*)" \
+            --output-format text | tee work/claude_log.txt
+
+      - name: Render graphics
+        run: python scripts/render.py
+
+      - name: Check output
+        run: python scripts/check.py
+
+      - name: Upload images and save to Blogger
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          python scripts/publish.py
+
+      - name: Keep work files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-${{ github.run_id }}
+          path: work/
+          retention-days: 14
