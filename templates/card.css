@@ -1,0 +1,50 @@
+/* 블로그 그래픽 공통 스타일. work/graphics/gN.html 에서
+   <link rel="stylesheet" href="../../templates/card.css"> 로 불러 써요. */
+:root {
+  --navy: #1f3a68;
+  --ink: #22272f;
+  --sub: #6b7280;
+  --line: #e3e6ea;
+  --soft: #f4f6f8;
+  --accent: #f58220;
+  --good: #188038;
+  --bad: #d93025;
+  --hl: #fff8e6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #fff; }
+body { font-family: "Noto Sans CJK KR", "Noto Sans KR", sans-serif; color: var(--ink); width: 760px; }
+#card { width: 760px; padding: 36px 40px 30px; background: #fff; border-top: 8px solid var(--navy); }
+.kicker { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin-bottom: 8px; }
+h1 { font-size: 30px; font-weight: 900; line-height: 1.35; color: var(--navy); word-break: keep-all; }
+.lead { font-size: 16px; color: var(--sub); margin-top: 10px; line-height: 1.6; word-break: keep-all; }
+.body { margin-top: 26px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th { background: var(--soft); font-weight: 700; color: #3a414c; padding: 14px 10px; border-bottom: 1px solid var(--line); border-top: 2px solid #4a5260; }
+td { padding: 14px 10px; text-align: center; border-bottom: 1px solid var(--line); }
+tr.hl td { background: var(--hl); font-weight: 700; }
+.o { color: var(--good); font-weight: 900; } .x { color: var(--bad); font-weight: 900; } .tri { color: var(--accent); font-weight: 900; }
+
+/* 막대 그래프 */
+.bars { display: flex; flex-direction: column; gap: 14px; }
+.bar { display: grid; grid-template-columns: 150px 1fr 90px; align-items: center; gap: 12px; font-size: 16px; }
+.bar .track { height: 26px; background: var(--soft); border-radius: 6px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--navy); border-radius: 6px; }
+.bar .fill.alt { background: var(--accent); }
+.bar .v { font-weight: 700; text-align: right; }
+
+/* 단계/카드 */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.step { background: var(--soft); border-radius: 12px; padding: 20px 18px; }
+.step .n { width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 900; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.step b { display: block; font-size: 17px; margin-bottom: 6px; }
+.step p { font-size: 14.5px; color: var(--sub); line-height: 1.55; word-break: keep-all; }
+
+/* 체크리스트 */
+.check { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.check li { background: var(--soft); border-radius: 10px; padding: 14px 18px 14px 50px; position: relative; font-size: 16px; line-height: 1.5; }
+.check li::before { content: "✓"; position: absolute; left: 18px; top: 13px; width: 22px; height: 22px; border-radius: 50%; background: var(--good); color: #fff; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+
+.foot { margin-top: 22px; font-size: 13px; color: #9aa1ad; display: flex; justify-content: space-between; }
