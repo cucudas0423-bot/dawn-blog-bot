@@ -129,7 +129,12 @@ def main():
     apply = "--apply" in sys.argv
     tok = blogger.access_token()
     total = 0
-    for p in all_posts(tok):
+    posts = all_posts(tok)
+    os.makedirs("backup", exist_ok=True)
+    import json
+    json.dump([{"id": p["id"], "status": p["_status"], "title": p["title"], "content": p.get("content", "")} for p in posts],
+              open("backup/posts_before_restyle.json", "w", encoding="utf-8"), ensure_ascii=False)
+    for p in posts:
         new, n = restyle(p.get("content", ""))
         changed = sum(n.values())
         if not changed:
