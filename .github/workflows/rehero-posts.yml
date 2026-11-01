@@ -1,0 +1,43 @@
+name: rehero-posts
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "실제로 교체할까요? (끄면 이미지만 만들어 Artifacts에 보관)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  rehero:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
+          pip install -q -r requirements.txt pillow
+          python -m playwright install --with-deps chromium > /dev/null
+      - name: Make hero images
+        run: |
+          git config user.name "blog-bot"
+          git config user.email "blog-bot@users.noreply.github.com"
+          python scripts/rehero_posts.py ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rehero-${{ github.run_id }}
+          path: work/rehero/
+          retention-days: 90
