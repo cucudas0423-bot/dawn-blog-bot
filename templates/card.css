@@ -60,11 +60,14 @@ tr.hl td { background: var(--amber-soft); color: #fff4e2; font-weight: 700; }
 
 .foot { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--night3); font-size: 13px; color: #7f796f; display: flex; justify-content: space-between; }
 
-/* 대표 이미지(g1): 비 오는 새벽 가로등 길 배경 위에 제목 */
-#card.hero { height: 428px; padding: 0; background: url("hero_bg.svg") center / cover no-repeat, var(--night); }
-#card.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,14,18,.88) 0%, rgba(12,14,18,.55) 48%, rgba(12,14,18,0) 75%); }
-#card.hero .in { position: absolute; z-index: 1; left: 44px; bottom: 40px; width: 430px; }
-#card.hero h1 { font-size: 34px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
-#card.hero .lead { color: #d6cfc3; }
-#card.hero .foot { position: absolute; z-index: 1; left: 44px; right: 44px; bottom: 14px; margin: 0; padding: 0; border: 0; color: #a59d90; }
-#card.hero .in { bottom: 52px; }
+/* 대표 이미지(g1): 블로그 주인이 찍은 밤 사진(templates/heroes/)을 날짜별로 돌려 써요.
+   render.py 가 --hero 변수를 넣어 줘요. 사진이 없으면 그린 배경(hero_bg.svg). */
+#card.hero { height: 428px; padding: 0; background: var(--hero, url("hero_bg.svg")) center / cover no-repeat, var(--night); }
+#card.hero::after { content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(10,11,14,.90) 0%, rgba(10,11,14,.70) 42%, rgba(10,11,14,.15) 78%),
+    linear-gradient(0deg, rgba(10,11,14,.75) 0%, rgba(10,11,14,0) 45%); }
+#card.hero .in { position: absolute; z-index: 1; left: 44px; bottom: 52px; width: 440px; }
+#card.hero h1 { font-size: 34px; text-shadow: 0 2px 18px rgba(0,0,0,.7); }
+#card.hero .lead { color: #ddd5c8; }
+#card.hero .foot { position: absolute; z-index: 1; left: 44px; right: 44px; bottom: 14px; margin: 0; padding: 0; border: 0; color: #b3aa9c; }

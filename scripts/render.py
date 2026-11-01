@@ -11,6 +11,18 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GDIR = os.path.join(ROOT, "work", "graphics")
+HEROES = sorted(glob.glob(os.path.join(ROOT, "templates", "heroes", "*.jpg")))
+
+
+def hero_photo():
+    """대표 이미지 배경 사진을 날짜별로 돌려 써요. HERO=2 처럼 번호로 고를 수도 있어요."""
+    if not HEROES:
+        return None
+    pick = os.environ.get("HERO")
+    if pick and pick.isdigit() and 1 <= int(pick) <= len(HEROES):
+        return HEROES[int(pick) - 1]
+    import datetime as dt
+    return HEROES[dt.date.today().toordinal() % len(HEROES)]
 
 
 def main():
@@ -28,6 +40,12 @@ def main():
             pg.goto("file://" + f)
             pg.wait_for_load_state("networkidle")
             pg.evaluate("document.fonts.ready")
+            photo = hero_photo()
+            if photo:
+                pg.evaluate("""u => { const c = document.querySelector('#card.hero');
+                    if (c && !c.style.getPropertyValue('--hero')) c.style.setProperty('--hero', `url("${u}")`); }""",
+                            "file://" + photo)
+                pg.wait_for_load_state("networkidle")
             el = pg.query_selector("#card") or pg.query_selector("body")
             out = f[:-5] + ".png"
             el.screenshot(path=out)

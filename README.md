@@ -85,7 +85,7 @@ GitHub 모바일 앱을 설치하거나, 저장소 오른쪽 위 **Watch → All
 
 ## 글투·디자인
 - 글을 다 쓴 뒤 `humanizer/`(korean-humanizer, MIT, dotoricode)의 기준으로 AI 글투를 한 번 걷어내요. 해요체는 유지해요.
-- 그래픽은 "새벽 4시" 밤·가로등 무드(`templates/card.css`, 대표 이미지 배경 `templates/hero_bg.svg`)예요.
+- 그래픽은 "새벽 4시" 밤·가로등 무드(`templates/card.css`)예요. 대표 이미지 배경은 블로그 주인이 직접 찍은 밤 사진(`templates/heroes/*.jpg`)을 날짜별로 돌려 써요. 사진을 더 넣으려면 같은 폴더에 jpg를 추가하면 돼요(1520×856 권장).
 - 예전 글의 파란 강조·주황 박스를 바꾸려면 Actions → **restyle-posts** (먼저 apply 끄고 확인 → 켜고 실행).
 
 ## 파일 구성
