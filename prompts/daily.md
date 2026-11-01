@@ -27,17 +27,26 @@
   - `<p class="cat">새벽 4시의 자동매매 · 분류</p>` (맨 위 한 줄)
   - `<div class="box"><p>...</p></div>` 요약 박스, `<div class="faq"><p><b>Q. ...</b></p><p>...</p></div>` FAQ
   - `<p class="note">` 표 아래 작은 주석, `<p class="disc">` 맨 끝 면책 문구(필수)
-  - `<span class="bl">` 파란 강조, `<span class="gr">` 초록 팁 강조, `<p class="quote">` 인용구
+  - `<p class="quote">` 인용구(한 글에 많아야 1개)
+  - 강조는 `<b>`만, 한 문단에 많아야 한 곳. 색깔 강조(`span.bl`, `span.gr`)는 쓰지 마.
   - h2(최소 5개), h3, table/thead/tbody/th/td, ul/ol
 - 그래픽 자리: `<img data-g="1" alt="그래픽을 설명하는 한국어 문장">` (번호는 1부터, 3~6개). 첫 그래픽은 도입부 바로 아래 대표 이미지.
 - 본문 3,500~6,000자. 구성 예: 도입(왜 지금 이 주제인가) → 요약 박스 → 본론 h2 3~5개(표·그래픽) → 체크리스트/주의점 → FAQ 3~5개 → 마무리 → 면책.
 - 면책 예: "이 글은 2026년 ○월 ○일 공개 자료를 바탕으로 정리한 정보이며, 특정 종목이나 증권사를 추천하거나 투자를 권유하지 않습니다. 투자 판단과 책임은 본인에게 있어요."
 - style 속성은 넣지 마(업로드 단계에서 자동으로 입혀져).
 
+## 3.5단계: AI 티 걷어내기 — humanizer
+- humanizer/SKILL.md 와 humanizer/references/ko-ai-signals.md 를 읽고, 그 기준으로 work/body.html 의 문장을 직접 다듬어(Edit). 결과 보고 형식(## Humanized 등)은 쓰지 말고 파일만 고쳐.
+- 이 블로그의 brand voice: 해요체 유지(~다체로 바꾸지 마), 친근하지만 담백하게. 숫자·날짜·고유명사·링크·표 수치·HTML 태그와 class·data-g 는 절대 바꾸지 마.
+- 특히 줄일 것: "~를 통해", "~에 있어서", "다양한", "매우", "핵심은", "결론부터 말하면", "정리해 볼게요/알아볼게요" 같은 판에 박힌 시작과 맺음, 3항 나열 습관, 문단마다 반복되는 굵게 강조, 이모지.
+- 소제목(h2)도 "~란? 완벽 정리" 같은 상투어 대신 내용을 말하는 평이한 문장으로.
+
 ## 4단계: 그래픽 — work/graphics/gN.html
 - 그래픽마다 HTML 파일 하나: work/graphics/g1.html, g2.html ... (본문 data-g 번호와 일치)
-- templates/sample_card.html 과 templates/card.css 를 읽고 같은 디자인을 써. 각 파일은 `<link rel="stylesheet" href="../../templates/card.css">` 를 불러오고, 내용 전체를 `<div id="card">` 안에 넣어. 폭은 760px 고정, 높이는 내용만큼.
+- templates/sample_card.html, templates/sample_hero.html, templates/card.css 를 읽고 같은 디자인을 써. 각 파일은 `<link rel="stylesheet" href="../../templates/card.css">` 를 불러오고, 내용 전체를 `<div id="card">` 안에 넣어. 폭은 760px 고정, 높이는 내용만큼.
 - 쓸 수 있는 구성: 표(.hl 강조 행, .o/.x/.tri 기호), 막대(.bars/.bar), 단계(.steps/.step), 체크리스트(.check). 필요하면 파일 안에 <style>을 추가해도 돼.
+- 디자인 톤: "새벽 4시" 블로그 이름에 맞춘 밤·가로등 무드예요. 짙은 남색·차콜 바탕에 따뜻한 호박색(가로등 불빛) 포인트, 은은한 빛과 비 느낌. card.css 기본값을 그대로 쓰고 다른 색(파랑·초록·보라 등)을 새로 넣지 마.
+- 첫 그래픽(g1, 대표 이미지)은 templates/sample_hero.html 처럼 `<div id="card" class="hero">` 구조로 만들어. 제목은 짧게 두 줄 이내.
 - 글자는 크게(본문 16px 이상), 한 그래픽에 메시지 하나. 하단 .foot 에 기준 날짜와 "새벽 4시의 자동매매".
 - 외부 이미지·폰트·스크립트를 불러오지 마.
 - 다 만들면 `python scripts/render.py` 를 실행하고, 만들어진 PNG를 Read로 열어 글자 잘림·겹침·오타를 확인해서 고쳐. 고친 뒤 다시 렌더링해.
