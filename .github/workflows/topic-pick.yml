@@ -1,0 +1,29 @@
+name: topic-pick
+
+# 주제 후보 이슈에 블로그 주인이 댓글로 번호/주제를 달면 글쓰기를 시작해요.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  issues: write
+
+jobs:
+  pick:
+    if: >-
+      contains(github.event.issue.labels.*.name, 'topic-proposal') &&
+      github.event.comment.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BODY: ${{ github.event.issue.body }}
+      COMMENT: ${{ github.event.comment.body }}
+      ISSUE: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read choice and start writing
+        run: python scripts/topic_pick.py

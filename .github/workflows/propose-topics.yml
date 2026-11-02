@@ -1,0 +1,118 @@
+name: propose-topics
+
+on:
+  schedule:
+    # 매일 14:50 KST (= 05:50 UTC). GitHub가 예약 실행을 가끔 건너뛰어서
+    # 15:20, 16:20 에 한 번씩 더 걸어 두고, 이미 오늘 글을 썼으면 건너뛰어요.
+    - cron: "50 5 * * *"
+    - cron: "20 6 * * *"
+    - cron: "20 7 * * *"
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "후보를 고를 때 참고할 지시 (예: 세금 말고 시황 위주로)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: propose-topics
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.g.outputs.skip }}
+    steps:
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          TODAY=$(date -u +%F)
+          N=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/propose-topics.yml/runs?created=%3E%3D${TODAY}&per_page=30" \
+              --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | select(.conclusion == \"success\" or .status == \"in_progress\" or .status == \"queued\")] | length")
+          echo "오늘 이미 실행된 글쓰기: ${N}회"
+          if [ "${N:-0}" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
+  post:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Seoul
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+      PUBLISH_MODE: ${{ vars.PUBLISH_MODE || 'draft' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tools
+        run: |
+          pip install -q -r requirements.txt
+          npm install -g @anthropic-ai/claude-code > /dev/null
+
+      - name: Collect existing posts
+        run: |
+          mkdir -p work/graphics
+          python scripts/blogger.py list > work/existing_posts.json
+          echo "기존 글 $(python -c "import json;print(len(json.load(open('work/existing_posts.json'))))")개"
+
+      - name: Research and write (Claude)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          NOTE: ${{ github.event.inputs.note }}
+          MODEL: ${{ vars.CLAUDE_MODEL || 'opus' }}
+        run: |
+          set -o pipefail
+          TODAY=$(date +%F)
+          PROMPT="$(cat prompts/propose.md)
+
+          오늘 날짜(서울): ${TODAY}
+          이번 회차 추가 지시: ${NOTE:-없음}"
+          claude -p "$PROMPT" \
+            --model "$MODEL" \
+            --max-turns 40 \
+            --allowedTools "WebSearch,WebFetch,Read,Write,Edit,Glob,Grep,Bash(ls*)" \
+            --output-format text 2>&1 | tee work/claude_log.txt || true
+          if grep -qiE "hit your (session|usage|weekly)? ?limit|usage limit|rate limit" work/claude_log.txt; then
+            echo "::error title=Claude 사용 한도 초과::$(grep -iE 'limit' work/claude_log.txt | head -1) — 한도가 풀린 뒤 이 실행을 Re-run 하세요."
+            exit 1
+          fi
+          if grep -qiE "invalid api key|authentication|unauthorized|OAuth token" work/claude_log.txt; then
+            echo "::error title=Claude 인증 실패::CLAUDE_CODE_OAUTH_TOKEN 비밀값을 확인하세요. (claude setup-token 으로 다시 발급)"
+            exit 1
+          fi
+          if [ ! -f work/topics.json ]; then
+            echo "::error title=글 작성 미완료::Claude가 주제 후보를 만들지 못했어요. Artifacts의 work/claude_log.txt 를 확인하세요."
+            tail -20 work/claude_log.txt
+            exit 1
+          fi
+
+      - name: Post topic proposal issue
+        run: python scripts/propose_issue.py
+
+      - name: Keep work files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topics-${{ github.run_id }}
+          path: work/
+          retention-days: 14
