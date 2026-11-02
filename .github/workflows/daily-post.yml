@@ -2,8 +2,11 @@ name: daily-post
 
 on:
   schedule:
-    # 매일 14:50 KST (= 05:50 UTC)
+    # 매일 14:50 KST (= 05:50 UTC). GitHub가 예약 실행을 가끔 건너뛰어서
+    # 15:20, 16:20 에 한 번씩 더 걸어 두고, 이미 오늘 글을 썼으면 건너뛰어요.
     - cron: "50 5 * * *"
+    - cron: "20 6 * * *"
+    - cron: "20 7 * * *"
   workflow_dispatch:
     inputs:
       note:
@@ -14,13 +17,32 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: read
 
 concurrency:
   group: daily-post
   cancel-in-progress: false
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.g.outputs.skip }}
+    steps:
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          TODAY=$(date -u +%F)
+          N=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/daily-post.yml/runs?created=%3E%3D${TODAY}&per_page=30" \
+              --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID}) | select(.conclusion == \"success\" or .status == \"in_progress\" or .status == \"queued\")] | length")
+          echo "오늘 이미 실행된 글쓰기: ${N}회"
+          if [ "${N:-0}" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
   post:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
