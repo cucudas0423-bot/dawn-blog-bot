@@ -25,6 +25,10 @@ def style(html: str, urls: dict) -> str:
         new = soup.new_tag("img", src=url, alt=im.get("alt", ""), width="1080",
                            style="border-radius:4px;height:auto;max-width:100%;")
         wrap.append(new)
+        if im.get("data-cap"):
+            cap = soup.new_tag("div", style="color:#8a8f98;font-size:14px;margin-top:8px;")
+            cap.string = im["data-cap"]
+            wrap.append(cap)
         im.replace_with(wrap)
 
     # 인용구: 큰 따옴표 장식 없이 왼쪽 선만
@@ -38,6 +42,12 @@ def style(html: str, urls: dict) -> str:
         b = soup.new_tag("b")
         b.append(BeautifulSoup(s.decode_contents(), "html.parser"))
         s.replace_with(b)
+
+    # 핵심 문장 빨간 강조(아껴서), 구분선
+    for sp in soup.find_all("span", class_="hl"):
+        sp["style"] = "color:#e03131;"
+    for hr in soup.find_all("hr"):
+        hr["style"] = "border:none;border-top:1px solid #e3e0da;margin:48px 0;"
 
     for d in soup.find_all("div", class_="box"):
         d["style"] = "background:#f7f5f1;border-left:3px solid #c98a3c;margin:28px 0;padding:16px 20px;"

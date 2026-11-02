@@ -71,3 +71,8 @@ tr.hl td { background: var(--amber-soft); color: #fff4e2; font-weight: 700; }
 #card.hero h1 { font-size: 34px; text-shadow: 0 2px 18px rgba(0,0,0,.7); }
 #card.hero .lead { color: #ddd5c8; }
 #card.hero .foot { position: absolute; z-index: 1; left: 44px; right: 44px; bottom: 14px; margin: 0; padding: 0; border: 0; color: #b3aa9c; }
+
+/* 워터마크: 그래픽이 퍼가져도 출처가 남게 */
+#card:not(.hero)::after { content: "새벽 4시의 자동매매"; position: absolute; right: 48px; top: 50%;
+  transform: rotate(-12deg); font-size: 34px; font-weight: 900; color: rgba(240,163,71,.07);
+  pointer-events: none; white-space: nowrap; }
