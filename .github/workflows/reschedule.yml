@@ -1,0 +1,25 @@
+name: reschedule
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "글ID=now 또는 글ID=2026-11-05 07:00 을 ; 로 이어서 (서울 시간)"
+        required: true
+
+jobs:
+  reschedule:
+    runs-on: ubuntu-latest
+    env:
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+      PLAN: ${{ github.event.inputs.plan }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - run: python scripts/reschedule.py "$PLAN"
