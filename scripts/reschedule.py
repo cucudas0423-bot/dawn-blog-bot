@@ -31,9 +31,10 @@ def main():
             if r.status_code != 200:
                 print(f"[실패] 예약 취소 실패: {title} {r.status_code} {r.text[:150]}")
                 continue
-        params = {}
-        if when != "now":
-            params["publishDate"] = dt.datetime.strptime(when, "%Y-%m-%d %H:%M").replace(tzinfo=KST).isoformat()
+        # now 도 현재 시각을 명시해야 해요(안 넣으면 예전 예약 시각이 그대로 쓰여요)
+        t = dt.datetime.now(KST).replace(microsecond=0) if when == "now" else \
+            dt.datetime.strptime(when, "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+        params = {"publishDate": t.isoformat()}
         r = requests.post(base + "/publish", headers=blogger._h(tok), params=params, timeout=60)
         if r.status_code == 200:
             j = r.json()
