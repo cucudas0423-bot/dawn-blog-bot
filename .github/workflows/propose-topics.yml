@@ -116,3 +116,12 @@ jobs:
           name: topics-${{ github.run_id }}
           path: work/
           retention-days: 14
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          WHY=$(tail -n 10 work/claude_log.txt 2>/dev/null)
+          printf '%s\n\n```\n%s\n```\n\n%s\n' "오늘 주제 후보를 만들지 못했어요." "${WHY:-(로그 없음)}" \
+            "실행 기록: ${RUN} — 원인을 고친 뒤 **Re-run** 하세요." > /tmp/fail.md
+          gh issue create --title "⚠️ [$(date +%F)] 주제 추천 실패" --body-file /tmp/fail.md

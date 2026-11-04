@@ -29,6 +29,7 @@ jobs:
       BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
       PUBLISH_MODE: ${{ vars.PUBLISH_MODE || 'draft' }}
       GH_TOKEN: ${{ github.token }}
+      TOPIC_LABEL: ${{ github.event.inputs.note }}
     steps:
       - uses: actions/checkout@v4
 
@@ -87,8 +88,35 @@ jobs:
       - name: Render graphics
         run: python scripts/render.py
 
-      - name: Check output
-        run: python scripts/check.py
+      - name: Check output (fix once if needed)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          MODEL: ${{ vars.CLAUDE_MODEL || 'opus' }}
+        run: |
+          if python scripts/check.py; then exit 0; fi
+          echo "::warning::검사 실패 → Claude가 오류만 한 번 고쳐요"
+          ERR=$(python -c "import json;print(chr(10).join(json.load(open('work/check.json'))['errors']))" 2>/dev/null || echo "work/post.json 또는 body.html 을 다시 확인")
+          claude -p "work/ 에 있는 블로그 글이 자동 검사에서 떨어졌어. prompts/daily.md 규칙(말투·금지사항)을 지키면서 아래 오류만 고쳐. 그래픽(work/graphics/gN.html)을 고쳤으면 python scripts/render.py 를 다시 실행하고, 마지막에 python scripts/check.py 로 통과를 확인해.
+          오류:
+          ${ERR}" \
+            --model "$MODEL" --max-turns 30 \
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebFetch,Bash(python scripts/render.py*),Bash(python scripts/check.py*),Bash(ls*)" \
+            --output-format text 2>&1 | tee work/fix_log.txt || true
+          python scripts/render.py
+          python scripts/check.py
+
+      - name: Fact review (separate model)
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL || 'sonnet' }}
+        run: |
+          claude -p "$(cat prompts/review.md)" \
+            --model "$REVIEW_MODEL" --max-turns 30 \
+            --allowedTools "Read,Write,Glob,WebFetch,WebSearch" \
+            --output-format text 2>&1 | tee work/review_log.txt || true
+          python -c "import json;d=json.load(open('work/review.json'));print('검토 점수:', d.get('scores'))"
 
       - name: Upload images and save to Blogger
         run: |
@@ -103,3 +131,14 @@ jobs:
           name: work-${{ github.run_id }}
           path: work/
           retention-days: 14
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          WHY=$( (grep -h "::error\|오류:" work/*.txt 2>/dev/null; tail -n 8 work/claude_log.txt 2>/dev/null) | tail -n 12)
+          printf '%s\n\n%s\n\n```\n%s\n```\n\n%s\n' \
+            "**${{ github.workflow }}** 실행이 실패했어요. 블로그에는 아무것도 저장되지 않았을 수 있어요." \
+            "주제: ${TOPIC_LABEL:-자동}" "${WHY:-(로그 없음)}" \
+            "실행 기록: ${RUN} — 원인을 고친 뒤(사용 한도면 풀린 뒤) 이 링크에서 **Re-run** 하세요." > /tmp/fail.md
+          gh issue create --title "⚠️ [$(date +%F)] 자동글쓰기 실패 — ${{ github.workflow }}" --body-file /tmp/fail.md
