@@ -45,6 +45,8 @@ else:
             errs.append(f"g{g} 이미지에 alt 가 없어요")
     if not soup.find("p", class_="disc"):
         errs.append("면책 문구(<p class=\"disc\">)가 없어요")
+    elif "AI의 도움" not in soup.find("p", class_="disc").get_text():
+        errs.append("면책 문구에 AI 활용 안내 문장이 없어요")
 
     # 검증 게이트: 운영자 매매 노출·AI 말투·기준일
     LEAK = [r"제 계좌", r"제가 실제로 (산|샀|매수|매도|팔)", r"(내|제) 매매 ?규칙", r"(내|제) 수익률",

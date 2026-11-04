@@ -56,7 +56,7 @@
 - examples/sample_post.html 을 먼저 읽고 같은 마크업 구조와 톤을 따라 해. 사용 가능한 클래스:
   - `<p class="cat">새벽 4시의 자동매매 · 분류</p>` (맨 위 한 줄)
   - `<div class="box"><p>...</p></div>` 요약 박스, `<div class="faq"><p><b>Q. ...</b></p><p>...</p></div>` FAQ
-  - `<p class="note">` 표 아래 작은 주석, `<p class="disc">` 맨 끝 면책 문구(필수)
+  - `<p class="note">` 표 아래 작은 주석, `<p class="disc">` 맨 끝 면책 문구(필수). 면책 문구 마지막 문장은 항상 "이 글은 AI의 도움을 받아 자료를 정리하고, 운영자가 확인해 올립니다."로 끝내
   - `<p class="quote">` 인용구(한 글에 많아야 1개)
   - 강조는 위 "글쓰기 스타일" 규칙대로 `span.hl`(빨강, 아껴서)와 `<b>`. 파랑·초록 강조(`span.bl`, `span.gr`)는 쓰지 마.
   - `<hr>` 구분선, `<img ... data-cap="설명">` 사진 설명
