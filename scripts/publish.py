@@ -27,7 +27,7 @@ def sh(*a, check=True):
 
 
 def push(msg):
-    sh("git", "add", "-A", "images", "drafts")
+    sh("git", "add", "-A", "images", "drafts", "logs")
     if sh("git", "diff", "--cached", "--quiet", check=False).returncode == 0:
         return
     sh("git", "commit", "-m", msg)
@@ -46,8 +46,29 @@ def next_slot(hour):
     return t
 
 
+def load(name):
+    try:
+        return json.load(open(os.path.join(W, name), encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def review_text(rv):
+    if not rv:
+        return "(검토 단계가 결과를 남기지 못했어요 — 직접 한 번 읽어 주세요)", None
+    sc = rv.get("scores", {})
+    line = " · ".join(f"{k} {v}/5" for k, v in sc.items())
+    chk = "\n".join(f"- {c.get('result','')}: {c.get('claim','')}" for c in rv.get("checked", [])[:8])
+    prob = "\n".join(f"- \"{p.get('quote','')[:80]}\" → {p.get('issue','')} ({p.get('fix','')})"
+                     for p in rv.get("problems", [])[:8]) or "- (없음)"
+    low = [k for k in ("사실", "안전") if isinstance(sc.get(k), (int, float)) and sc[k] <= 2]
+    return f"**점수:** {line}\n\n{rv.get('summary','')}\n\n**확인한 숫자**\n{chk or '- (없음)'}\n\n**고칠 곳**\n{prob}", low
+
+
 def main():
     meta = json.load(open(os.path.join(W, "post.json"), encoding="utf-8"))
+    chk = load("check.json")
+    rv_md, low = review_text(load("review.json"))
     body = open(os.path.join(W, "body.html"), encoding="utf-8").read()
     repo = os.environ["GITHUB_REPOSITORY"]
     branch = os.environ.get("GITHUB_REF_NAME", "main")
@@ -68,6 +89,10 @@ def main():
     html = style(body, urls)
     tok = blogger.access_token()
     mode = os.environ.get("PUBLISH_MODE", "draft")
+    held = ""
+    if mode != "draft" and low:
+        held = f"검토에서 {', '.join(low)} 점수가 낮아서 발행하지 않고 임시저장만 했어요. 고칠 곳을 확인한 뒤 발행하세요."
+        mode = "draft"
     labels = meta.get("labels", [])[:5]
     if mode == "now":
         # 영문 제목으로 바로 발행해 깔끔한 주소를 만든 뒤 한글 제목으로 바꿔요
@@ -103,6 +128,7 @@ def main():
     report = f"""## {meta['title']}
 
 **상태:** {state}
+{('> ⚠️ ' + held) if held else ''}
 **편집 링크:** {edit}
 **글 ID:** `{pid}`
 
@@ -118,6 +144,12 @@ def main():
 ### 확인이 필요한 부분
 {meta.get('notes','') or '(없음)'}
 
+### 자동 검사 주의
+{chr(10).join('- ' + w for w in chk.get('warnings', [])) or '- (없음)'}
+
+### 별도 검토 (다른 모델이 사실 확인)
+{rv_md}
+
 ### 출처
 {src}
 
@@ -127,6 +159,15 @@ def main():
     open(os.path.join(W, "report.md"), "w", encoding="utf-8").write(report)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8").write(report)
+    os.makedirs(os.path.join(ROOT, "logs"), exist_ok=True)
+    rv = load("review.json")
+    with open(os.path.join(ROOT, "logs", "runs.jsonl"), "a", encoding="utf-8") as f:
+        f.write(json.dumps({"date": today, "post_id": pid, "title": meta["title"], "mode": mode, "held": bool(held),
+                            "scores": rv.get("scores", {}), "warnings": len(chk.get("warnings", [])),
+                            "fixed_once": os.path.exists(os.path.join(W, "fix_log.txt")),
+                            "run": os.environ.get("GITHUB_RUN_ID", "")}, ensure_ascii=False) + "\n")
+    sh("git", "add", "logs")
+    push(f"run log: {pid}")
     sh("gh", "issue", "create", "--title", f"[{today}] {meta['title']}", "--body-file", os.path.join(W, "report.md"), check=False)
     print(report)
 

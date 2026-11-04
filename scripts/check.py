@@ -46,6 +46,36 @@ else:
     if not soup.find("p", class_="disc"):
         errs.append("면책 문구(<p class=\"disc\">)가 없어요")
 
+    # 검증 게이트: 운영자 매매 노출·AI 말투·기준일
+    LEAK = [r"제 계좌", r"제가 실제로 (산|샀|매수|매도|팔)", r"(내|제) 매매 ?규칙", r"(내|제) 수익률",
+            r"SOXL[^.。]{0,30}(매수|매도) ?기준", r"\d+ ?분할 ?매수"]
+    for pat in LEAK:
+        m = re.search(pat, text)
+        if m:
+            warns.append(f"운영자 매매 노출 의심 표현: '{text[max(0, m.start()-15):m.end()+15]}'")
+    AI = ["매우 중요한", "혁신적인", "획기적인", "다양한 방법", "효과적인 전략", "결론적으로", "요약하자면",
+          "살펴보겠습니다", "알아보겠습니다", "무엇보다 중요한", "한층 더"]
+    hits = [w for w in AI if w in text]
+    if len(hits) >= 3:
+        warns.append("AI 말투 후보가 많아요: " + ", ".join(hits))
+    if not re.search(r"20\d\d[.\-년] ?\d{1,2}[.\-월]? ?(\d{1,2}일?)?\s*(기준|확인)", text):
+        warns.append("숫자 확인 기준일(예: 2026.11.4 기준)이 본문에 안 보여요")
+
+srcs = meta.get("sources") or []
+bad = [s for s in srcs if not str(s.get("url", "")).startswith("http")]
+if len(srcs) < 2:
+    errs.append(f"출처가 {len(srcs)}개예요(최소 2개)")
+if bad:
+    errs.append(f"주소가 없는 출처가 {len(bad)}개 있어요")
+
+try:
+    olds = json.load(open(os.path.join(W, "existing_posts.json"), encoding="utf-8"))
+    if any((o.get("title") or "").strip() == (meta.get("title") or "").strip() for o in olds):
+        errs.append("같은 제목의 글이 이미 있어요(중복 저장 방지)")
+except (OSError, ValueError):
+    pass
+
+json.dump({"errors": errs, "warnings": warns}, open(os.path.join(W, "check.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 for w in warns:
     print("주의:", w)
 if errs:
