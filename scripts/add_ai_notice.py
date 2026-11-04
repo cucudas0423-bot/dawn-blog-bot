@@ -22,6 +22,8 @@ KEY = re.compile(r"투자 ?(권유|판단|결정)|책임|참고용|정보 제공
 def find_disc(soup):
     ps = [p for p in soup.find_all(["p", "div"]) if KEY.search(p.get_text()) and not p.find(["p", "div"])]
     small = [p for p in ps if "13px" in (p.get("style") or "") or "border-top" in (p.get("style") or "")]
+    if not small and not ps:
+        small = [p for p in soup.find_all("p") if "13px" in (p.get("style") or "")]
     return (small or ps or [None])[-1]
 
 
