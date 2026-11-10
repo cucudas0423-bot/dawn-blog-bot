@@ -1,0 +1,25 @@
+name: patch-post
+on:
+  workflow_dispatch:
+    inputs:
+      post_id: {required: true}
+      repl: {required: true, description: 'JSON [["old","new"],...]'}
+      apply: {type: boolean, default: false}
+permissions:
+  contents: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      BLOG_ID: ${{ vars.BLOG_ID || '7402902975921367375' }}
+      BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+      BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+      BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+      POST_ID: ${{ github.event.inputs.post_id }}
+      REPL: ${{ github.event.inputs.repl }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q requests
+      - run: python scripts/patch_post.py ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
