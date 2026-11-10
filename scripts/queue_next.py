@@ -36,5 +36,5 @@ for _ in range(3):
         break
     subprocess.run(["git", "pull", "--rebase"])
 gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/dispatches", "-X", "POST", "-f", "ref=main",
-   "-f", f"inputs[topic]={topic}", "-F", "inputs[publish]=false")
+   "-f", f"inputs[topic]={topic}", "-F", "inputs[publish]=true")
 print(f"다음 주제 실행: {topic[:60]} (남은 {len(rest)}개)")
