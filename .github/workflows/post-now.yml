@@ -12,6 +12,7 @@ on:
         default: true
 
 permissions:
+  actions: write
   contents: write
   issues: write
 
@@ -133,6 +134,12 @@ jobs:
           name: work-${{ github.run_id }}
           path: work/
           retention-days: 14
+
+      - name: Next topic in queue
+        if: success()
+        env:
+          SELF_RUN_ID: ${{ github.run_id }}
+        run: python scripts/queue_next.py
 
       - name: Notify failure
         if: failure()

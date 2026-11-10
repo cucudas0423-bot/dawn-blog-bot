@@ -13,10 +13,11 @@ def gh(*a):
     return subprocess.run(["gh", *a], check=True, text=True, capture_output=True).stdout
 
 
+me = os.environ.get("SELF_RUN_ID", "")
 busy = 0
 for st in ("queued", "in_progress", "pending", "waiting", "requested"):
-    r = json.loads(gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/runs?status={st}&per_page=5"))
-    busy += r.get("total_count", 0)
+    r = json.loads(gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/runs?status={st}&per_page=10"))
+    busy += sum(1 for w in r.get("workflow_runs", []) if str(w["id"]) != me)
 if busy:
     print(f"post-now 가 {busy}개 진행/대기 중이라 다음 차례를 기다려요")
     raise SystemExit(0)
