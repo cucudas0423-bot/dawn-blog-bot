@@ -43,7 +43,7 @@ jobs:
 
       - name: Install tools
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
+          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq --fix-missing fonts-noto-cjk > /dev/null && break; echo "apt 재시도 $i"; sleep 20; done
           pip install -q -r requirements.txt
           python -m playwright install --with-deps chromium > /dev/null
           npm install -g @anthropic-ai/claude-code > /dev/null
