@@ -5,6 +5,7 @@ on:
       post_id: {required: true}
       repl: {required: true, description: 'JSON [["old","new"],...]'}
       apply: {type: boolean, default: false}
+      find: {required: false, default: ''}
 permissions:
   contents: read
 jobs:
@@ -17,6 +18,7 @@ jobs:
       BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
       POST_ID: ${{ github.event.inputs.post_id }}
       REPL: ${{ github.event.inputs.repl }}
+      FIND: ${{ github.event.inputs.find }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
