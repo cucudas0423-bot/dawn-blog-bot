@@ -17,7 +17,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: daily-post
+  group: post-now-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

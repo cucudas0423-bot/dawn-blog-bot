@@ -18,7 +18,9 @@ busy = 0
 for st in ("queued", "in_progress", "pending", "waiting", "requested"):
     r = json.loads(gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/runs?status={st}&per_page=10"))
     busy += sum(1 for w in r.get("workflow_runs", []) if str(w["id"]) != me)
-if busy:
+LANES = int(os.environ.get("LANES", "2"))
+free = LANES - busy
+if free <= 0:
     print(f"post-now 가 {busy}개 진행/대기 중이라 다음 차례를 기다려요")
     raise SystemExit(0)
 
@@ -26,15 +28,17 @@ lines = [l for l in open(Q, encoding="utf-8").read().splitlines() if l.strip()] 
 if not lines:
     print("대기열이 비었어요")
     raise SystemExit(0)
-topic, rest = lines[0], lines[1:]
+take, rest = lines[:free], lines[free:]
 open(Q, "w", encoding="utf-8").write("\n".join(rest) + ("\n" if rest else ""))
 subprocess.run(["git", "config", "user.name", "blog-bot"], check=True)
 subprocess.run(["git", "config", "user.email", "blog-bot@users.noreply.github.com"], check=True)
-subprocess.run(["git", "commit", "-am", f"queue: {topic[:40]}"], check=True)
+subprocess.run(["git", "commit", "-am", f"queue: {len(take)}개 시작"], check=True)
 for _ in range(3):
     if subprocess.run(["git", "push"]).returncode == 0:
         break
     subprocess.run(["git", "pull", "--rebase"])
-gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/dispatches", "-X", "POST", "-f", "ref=main",
-   "-f", f"inputs[topic]={topic}", "-F", "inputs[publish]=true")
-print(f"다음 주제 실행: {topic[:60]} (남은 {len(rest)}개)")
+for topic in take:
+    gh("api", f"repos/{REPO}/actions/workflows/post-now.yml/dispatches", "-X", "POST", "-f", "ref=main",
+       "-f", f"inputs[topic]={topic}", "-F", "inputs[publish]=true")
+    print(f"다음 주제 실행: {topic[:60]}")
+print(f"남은 {len(rest)}개")
