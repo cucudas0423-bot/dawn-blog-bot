@@ -27,6 +27,9 @@ for old, new in json.loads(os.environ["REPL"]):
     n = html.count(old)
     print(f"{n}곳: {old[:50]}")
     html = html.replace(old, new)
+for pat, new in json.loads(os.environ.get("REGEX") or "[]"):
+    html, n = re.subn(pat, new, html, flags=re.S)
+    print(f"{n}곳(정규식): {pat[:60]}")
 if "--apply" in sys.argv:
     r = requests.patch(url, headers=blogger._h(tok), json={"content": html}, timeout=60)
     print("수정", r.status_code)
